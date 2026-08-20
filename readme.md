@@ -189,8 +189,8 @@ cd <repository-folder>
    NEXTAUTH_SECRET=your-secure-random-secret-key
 
    # Backend API URLs
-   BACKEND_URL=http://localhost:5000
-   BACKEND_URL=http://localhost:5000
+   NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
+   NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
    ```
 
 4. Start the frontend development server:

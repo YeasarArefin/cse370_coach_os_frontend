@@ -38,7 +38,7 @@ export default function AttendancePage() {
   const [isDirty, setIsDirty] = useState(false);
 
   const backendUrl =
-    process.env.BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   // 1. Fetch all Batches
   const { data: batches = [], isLoading: isLoadingBatches } = useQuery<

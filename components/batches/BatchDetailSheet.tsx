@@ -62,7 +62,7 @@ export function BatchDetailSheet({
   const [studentToRemove, setStudentToRemove] = useState<Student | null>(null);
 
   const backendUrl =
-    process.env.BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   // Fetch batch details and enrolled students
   const { data: batch, isLoading } = useQuery<BatchWithStudents>({
@@ -144,8 +144,8 @@ export function BatchDetailSheet({
                 <Badge
                   variant="secondary"
                   className={`capitalize text-xs font-medium rounded-full ${batch.status === "active"
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      : "bg-muted text-muted-foreground"
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-muted text-muted-foreground"
                     }`}
                 >
                   {batch.status}

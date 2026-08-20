@@ -21,7 +21,7 @@ export default function StudentsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const backendUrl =
-    process.env.BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   // Fetch Students
   const {

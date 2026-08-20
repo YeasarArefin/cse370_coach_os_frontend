@@ -79,7 +79,7 @@ export function EditBatchSheet({
       if (!batch) return;
 
       const backendUrl =
-        process.env.BACKEND_URL || "http://localhost:5000";
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
       const res = await fetch(`${backendUrl}/api/batches/${batch.batch_id}`, {
         method: "PUT",

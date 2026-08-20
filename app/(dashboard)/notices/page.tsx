@@ -19,7 +19,7 @@ export default function NoticesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const backendUrl =
-    process.env.BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   // Fetch all notices
   const {
@@ -111,8 +111,8 @@ export default function NoticesPage() {
             size="sm"
             onClick={() => setScopeFilter("all")}
             className={`h-7 px-3 text-xs font-medium rounded-full transition-all ${scopeFilter === "all"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+              ? "bg-background text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             All ({notices.length})
@@ -124,8 +124,8 @@ export default function NoticesPage() {
             size="sm"
             onClick={() => setScopeFilter("global")}
             className={`h-7 px-3 text-xs font-medium rounded-full transition-all gap-1.5 ${scopeFilter === "global"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+              ? "bg-background text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             <Globe className="size-3 text-blue-500" />
@@ -138,8 +138,8 @@ export default function NoticesPage() {
             size="sm"
             onClick={() => setScopeFilter("batch")}
             className={`h-7 px-3 text-xs font-medium rounded-full transition-all gap-1.5 ${scopeFilter === "batch"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+              ? "bg-background text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             <Layers className="size-3 text-emerald-500" />

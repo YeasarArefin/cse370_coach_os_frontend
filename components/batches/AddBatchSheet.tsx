@@ -52,7 +52,7 @@ export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
   const createMutation = useMutation({
     mutationFn: async () => {
       const backendUrl =
-        process.env.BACKEND_URL || "http://localhost:5000";
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
       const res = await fetch(`${backendUrl}/api/batches`, {
         method: "POST",

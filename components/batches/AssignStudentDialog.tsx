@@ -41,7 +41,7 @@ export function AssignStudentDialog({
   const [selectedStudentId, setSelectedStudentId] = useState("");
 
   const backendUrl =
-    process.env.BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   // Fetch all students
   const { data: allStudents = [], isLoading } = useQuery<Student[]>({

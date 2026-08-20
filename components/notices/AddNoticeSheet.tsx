@@ -37,7 +37,7 @@ export function AddNoticeSheet({ open, onOpenChange }: AddNoticeSheetProps) {
   const [scope, setScope] = useState<string>("global"); // "global" or batch_id
 
   const backendUrl =
-    process.env.BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   // Fetch batches for target selection
   const { data: batches = [] } = useQuery<Batch[]>({

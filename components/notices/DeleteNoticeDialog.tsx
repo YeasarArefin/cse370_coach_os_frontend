@@ -28,7 +28,7 @@ export function DeleteNoticeDialog({
   const queryClient = useQueryClient();
 
   const backendUrl =
-    process.env.BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   const deleteMutation = useMutation({
     mutationFn: async () => {

@@ -88,7 +88,7 @@ export function EditStudentSheet({
       if (!student) return;
 
       const backendUrl =
-        process.env.BACKEND_URL || "http://localhost:5000";
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
       const res = await fetch(`${backendUrl}/api/students/${student.student_id}`, {
         method: "PUT",
