@@ -18,101 +18,100 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Batch } from "@/types";
+import { Textarea } from "@/components/ui/textarea";
+import { Assignment, Batch } from "@/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-interface EditBatchSheetProps {
-  batch: Batch | null;
+interface EditAssignmentSheetProps {
+  assignment: Assignment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  batches: Batch[];
 }
 
-export function EditBatchSheet({
-  batch,
+export function EditAssignmentSheet({
+  assignment,
   open,
   onOpenChange,
-}: EditBatchSheetProps) {
+  batches,
+}: EditAssignmentSheetProps) {
   const queryClient = useQueryClient();
 
-  const [name, setName] = useState("");
+  const [batchId, setBatchId] = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [fee, setFee] = useState("1500");
-  const [startDate, setStartDate] = useState("");
-  const [status, setStatus] = useState<"active" | "completed" | "inactive">(
-    "active"
-  );
+  const [deadline, setDeadline] = useState("");
   const [validationError, setValidationError] = useState("");
 
-  // Sync form state when batch changes
+  // Sync state when assignment changes
   useEffect(() => {
-    if (batch) {
-      setName(batch.name || "");
-      setDescription(batch.description || "");
-      setFee(String(batch.fee ?? 1500));
-      setStartDate(
-        batch.start_date
-          ? new Date(batch.start_date).toISOString().split("T")[0]
+    if (assignment) {
+      setBatchId(assignment.batch_id || "");
+      setTitle(assignment.title || "");
+      setDescription(assignment.description || "");
+      setDeadline(
+        assignment.deadline
+          ? new Date(assignment.deadline).toISOString().split("T")[0]
           : ""
       );
-      setStatus(batch.status || "active");
       setValidationError("");
     }
-  }, [batch]);
+  }, [assignment]);
 
-  // Check whether form values changed from initial batch state
+  // Check whether form values changed from initial assignment state
   const isFormDirty = useMemo(() => {
-    if (!batch) return false;
-    const initialStartDate = batch.start_date
-      ? new Date(batch.start_date).toISOString().split("T")[0]
+    if (!assignment) return false;
+    const initialDeadline = assignment.deadline
+      ? new Date(assignment.deadline).toISOString().split("T")[0]
       : "";
     return (
-      name !== (batch.name || "") ||
-      description !== (batch.description || "") ||
-      fee !== String(batch.fee ?? 1500) ||
-      startDate !== initialStartDate ||
-      status !== (batch.status || "active")
+      batchId !== (assignment.batch_id || "") ||
+      title !== (assignment.title || "") ||
+      description !== (assignment.description || "") ||
+      deadline !== initialDeadline
     );
-  }, [batch, name, description, fee, startDate, status]);
+  }, [assignment, batchId, title, description, deadline]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!batch) return;
+      if (!assignment) return;
 
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-      const res = await fetch(`${backendUrl}/api/batches/${batch.batch_id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description: description || null,
-          fee: Number(fee) || 0,
-          start_date: startDate || null,
-          status,
-        }),
-      });
+      const res = await fetch(
+        `${backendUrl}/api/assignments/${assignment.assignment_id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            batch_id: batchId,
+            title,
+            description: description || null,
+            deadline: deadline || null,
+          }),
+        }
+      );
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || "Failed to update batch.");
+        throw new Error(data.message || "Failed to update assignment.");
       }
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["batches"] });
-      queryClient.invalidateQueries({ queryKey: ["fees"] });
-      toast.success("Batch Updated", {
-        description: `Batch "${data.name}" was updated successfully.`,
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      toast.success("Assignment Updated", {
+        description: `Changes to "${data.title || title}" have been saved.`,
       });
       onOpenChange(false);
     },
     onError: (error: Error) => {
       toast.error("Update Failed", {
-        description: error.message || "Could not update batch.",
+        description: error.message || "Could not update assignment.",
       });
     },
   });
@@ -121,15 +120,8 @@ export function EditBatchSheet({
     e.preventDefault();
     setValidationError("");
 
-    if (!name.trim()) {
-      const msg = "Batch name is required.";
-      setValidationError(msg);
-      toast.error("Validation Error", { description: msg });
-      return;
-    }
-
-    if (isNaN(Number(fee)) || Number(fee) < 0) {
-      const msg = "Monthly fee must be a valid positive number.";
+    if (!batchId || !title.trim()) {
+      const msg = "Please provide an assigned batch and assignment title.";
       setValidationError(msg);
       toast.error("Validation Error", { description: msg });
       return;
@@ -141,7 +133,7 @@ export function EditBatchSheet({
   const errorMessage =
     validationError ||
     (updateMutation.isError
-      ? updateMutation.error?.message || "Failed to update batch."
+      ? updateMutation.error?.message || "Failed to update assignment."
       : null);
 
   return (
@@ -149,10 +141,10 @@ export function EditBatchSheet({
       <SheetContent className="flex flex-col gap-0 p-0 w-full sm:max-w-xl md:max-w-2xl overflow-y-auto">
         <SheetHeader className="border-b border-border p-6 text-left">
           <SheetTitle className="font-heading text-lg font-bold">
-            Edit Batch Cohort
+            Edit Assignment
           </SheetTitle>
           <SheetDescription className="text-xs text-muted-foreground">
-            Update batch details, curriculum description, and operational status.
+            Update assignment instructions, batch cohort, or submission deadline.
           </SheetDescription>
         </SheetHeader>
 
@@ -164,101 +156,86 @@ export function EditBatchSheet({
               </Alert>
             )}
 
+            {/* Batch Select */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="edit-batch-name"
+                htmlFor="edit-assignment-batch"
                 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
-                Batch Name *
-              </label>
-              <Input
-                id="edit-batch-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-fee"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Monthly Fee (৳) *
-              </label>
-              <Input
-                id="edit-batch-fee"
-                type="number"
-                min="0"
-                step="50"
-                value={fee}
-                onChange={(e) => setFee(e.target.value)}
-                required
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-description"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Description / Syllabus
-              </label>
-              <Input
-                id="edit-batch-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-start-date"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Start Date
-              </label>
-              <Input
-                id="edit-batch-start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-status"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Batch Status
+                Assigned Batch *
               </label>
               <Select
-                value={status}
-                onValueChange={(val) =>
-                  setStatus(val as "active" | "completed" | "inactive")
-                }
+                value={batchId}
+                onValueChange={(val) => val && setBatchId(val)}
                 disabled={updateMutation.isPending}
               >
                 <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
-                  <SelectValue placeholder="Select status">
-                    {status === "active" ? "Active" : status === "completed" ? "Completed" : "Inactive"}
+                  <SelectValue placeholder="Select batch cohort">
+                    {batches.find((b) => b.batch_id === batchId)?.name}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  {batches.map((b) => (
+                    <SelectItem key={b.batch_id} value={b.batch_id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Title */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-assignment-title"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Assignment Title *
+              </label>
+              <Input
+                id="edit-assignment-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                disabled={updateMutation.isPending}
+                className="h-10 rounded-full px-4 text-sm"
+              />
+            </div>
+
+            {/* Deadline */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-assignment-deadline"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Submission Deadline
+              </label>
+              <Input
+                id="edit-assignment-deadline"
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                disabled={updateMutation.isPending}
+                className="h-10 rounded-full px-4 text-sm"
+              />
+            </div>
+
+            {/* Description / Instructions */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-assignment-description"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Instructions & Details
+              </label>
+              <Textarea
+                id="edit-assignment-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                disabled={updateMutation.isPending}
+                className="rounded-xl p-3 text-sm resize-none"
+              />
             </div>
           </div>
 
@@ -282,7 +259,7 @@ export function EditBatchSheet({
                 {updateMutation.isPending ? (
                   <>
                     <Loader2 className="animate-spin" data-icon="inline-start" />
-                    Saving...
+                    Saving Changes...
                   </>
                 ) : (
                   "Save Changes"

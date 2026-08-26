@@ -212,7 +212,9 @@ export function EditStudentSheet({
                 disabled={updateMutation.isPending}
               >
                 <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
-                  <SelectValue placeholder="Select batch" />
+                  <SelectValue placeholder="Select batch">
+                    {batches.find((b) => b.batch_id === batchId)?.name}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {batches.map((batch) => (
@@ -288,7 +290,9 @@ export function EditStudentSheet({
                 disabled={updateMutation.isPending}
               >
                 <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder="Select status">
+                    {status === "active" ? "Active" : "Inactive"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>

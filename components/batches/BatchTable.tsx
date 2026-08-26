@@ -90,6 +90,9 @@ export function BatchTable({
               Start Date
             </TableHead>
             <TableHead>
+              Monthly Fee
+            </TableHead>
+            <TableHead>
               Enrolled Students
             </TableHead>
             <TableHead>
@@ -147,6 +150,16 @@ export function BatchTable({
                       : "—"}
                   </span>
                 </div>
+              </TableCell>
+
+              <TableCell>
+                <Badge
+                  variant="secondary"
+                  className="bg-muted text-foreground font-mono font-medium rounded-full px-2.5 py-0.5 text-xs"
+                >
+                  ৳{Number(batch.fee ?? 0).toLocaleString()}
+                  <span className="text-[10px] text-muted-foreground font-sans ml-0.5">/mo</span>
+                </Badge>
               </TableCell>
 
               <TableCell>

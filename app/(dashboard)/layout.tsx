@@ -19,7 +19,7 @@ export default function DashboardLayout({
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 md:px-6 backdrop-blur-xs">
           <div className="flex items-center gap-2.5">
             <SidebarTrigger className="md:hidden -ml-1 text-foreground" />
-            <span className="text-sm font-medium tracking-tight text-foreground">Coaching Center Portal</span>
+            <span className="text-sm font-medium tracking-tight text-foreground">CoachOS Portal</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />

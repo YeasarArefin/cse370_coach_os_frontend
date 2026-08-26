@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AttendanceResponse, Batch } from "@/types";
+import { AttendanceResponse, Batch, Student } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarCheck,
@@ -20,12 +20,16 @@ import {
   Loader2,
   RefreshCw,
   Save,
-  XCircle
+  XCircle,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export default function AttendancePage() {
+  const { data: session } = useSession();
+  const isStudent = (session?.user as { role?: string })?.role === "student";
+
   const queryClient = useQueryClient();
 
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
@@ -40,8 +44,32 @@ export default function AttendancePage() {
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-  // 1. Fetch all Batches
-  const { data: batches = [], isLoading: isLoadingBatches } = useQuery<
+  // 1. Fetch Students (to find enrolled batches for student role)
+  const { data: students = [] } = useQuery<Student[]>({
+    queryKey: ["students"],
+    queryFn: async () => {
+      const res = await fetch(`${backendUrl}/api/students`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isStudent,
+  });
+
+  const loggedInStudent = useMemo(() => {
+    if (!isStudent || !session?.user) return null;
+    const userId = (session.user as { id?: string }).id;
+    const email = session.user.email?.toLowerCase();
+    return (
+      students.find(
+        (s) =>
+          (userId && s.user_id === userId) ||
+          (email && s.email.toLowerCase() === email)
+      ) || null
+    );
+  }, [isStudent, session, students]);
+
+  // 2. Fetch all Batches
+  const { data: allBatches = [], isLoading: isLoadingBatches } = useQuery<
     Batch[]
   >({
     queryKey: ["batches"],
@@ -51,6 +79,17 @@ export default function AttendancePage() {
       return res.json();
     },
   });
+
+  // Filter batches for students
+  const batches = useMemo(() => {
+    if (!isStudent || !loggedInStudent) return allBatches;
+    const studentBatchIds = new Set(
+      (loggedInStudent.batches || []).map((b) => b.batch_id).filter(Boolean)
+    );
+    if (loggedInStudent.batch_id) studentBatchIds.add(loggedInStudent.batch_id);
+
+    return allBatches.filter((b) => studentBatchIds.has(b.batch_id));
+  }, [allBatches, isStudent, loggedInStudent]);
 
   // Auto-select the first batch when batches load
   useEffect(() => {
@@ -122,13 +161,13 @@ export default function AttendancePage() {
 
   // Calculate live summary stats from local map
   const liveSummary = useMemo(() => {
-    const students = attendanceData?.students || [];
+    const attendanceStudents = attendanceData?.students || [];
     let present = 0;
     let absent = 0;
     let late = 0;
     let unmarked = 0;
 
-    students.forEach((s) => {
+    attendanceStudents.forEach((s) => {
       const status = attendanceMap[s.student_id];
       if (status === "present") present++;
       else if (status === "absent") absent++;
@@ -137,7 +176,7 @@ export default function AttendancePage() {
     });
 
     return {
-      total: students.length,
+      total: attendanceStudents.length,
       present,
       absent,
       late,
@@ -189,7 +228,7 @@ export default function AttendancePage() {
     },
   });
 
-  const students = attendanceData?.students || [];
+  const attendanceStudents = attendanceData?.students || [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -205,24 +244,26 @@ export default function AttendancePage() {
           </p>
         </div>
 
-        {/* Save Attendance CTA */}
-        <Button
-          onClick={() => saveMutation.mutate()}
-          disabled={!isDirty || saveMutation.isPending || students.length === 0}
-          className="h-10 rounded-full px-6 text-sm font-medium shadow-none self-start sm:self-auto gap-2"
-        >
-          {saveMutation.isPending ? (
-            <>
-              <Loader2 className="animate-spin" data-icon="inline-start" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="size-4" data-icon="inline-start" />
-              <span>Save Attendance</span>
-            </>
-          )}
-        </Button>
+        {/* Save Attendance CTA (Teachers only) */}
+        {!isStudent && (
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={!isDirty || saveMutation.isPending || attendanceStudents.length === 0}
+            className="h-10 rounded-full px-6 text-sm font-medium shadow-none self-start sm:self-auto gap-2"
+          >
+            {saveMutation.isPending ? (
+              <>
+                <Loader2 className="animate-spin" data-icon="inline-start" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="size-4" data-icon="inline-start" />
+                <span>Save Attendance</span>
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* 2. Controls Bar: Batch Selector & Date Picker */}
@@ -241,7 +282,9 @@ export default function AttendancePage() {
                 onValueChange={(val) => val && setSelectedBatchId(val)}
               >
                 <SelectTrigger className="h-10 w-full sm:w-56 rounded-full px-4 text-sm bg-background/50">
-                  <SelectValue placeholder="Select batch" />
+                  <SelectValue placeholder="Select batch">
+                    {batches.find((b) => b.batch_id === selectedBatchId)?.name}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {batches.map((b) => (
@@ -272,43 +315,45 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* Quick Bulk Actions */}
-        <div className="flex items-center gap-2 self-end md:self-auto">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => handleMarkAll("present")}
-            disabled={students.length === 0}
-            className="h-8 rounded-full px-3 text-xs gap-1 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"
-          >
-            <CheckCircle2 className="size-3.5" />
-            <span>Mark All Present</span>
-          </Button>
+        {/* Quick Bulk Actions (Teachers only) */}
+        {!isStudent && (
+          <div className="flex items-center gap-2 self-end md:self-auto">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleMarkAll("present")}
+              disabled={attendanceStudents.length === 0}
+              className="h-8 rounded-full px-3 text-xs gap-1 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"
+            >
+              <CheckCircle2 className="size-3.5" />
+              <span>Mark All Present</span>
+            </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => handleMarkAll("absent")}
-            disabled={students.length === 0}
-            className="h-8 rounded-full px-3 text-xs gap-1 border-rose-500/30 text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-          >
-            <XCircle className="size-3.5" />
-            <span>Mark All Absent</span>
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleMarkAll("absent")}
+              disabled={attendanceStudents.length === 0}
+              className="h-8 rounded-full px-3 text-xs gap-1 border-rose-500/30 text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+            >
+              <XCircle className="size-3.5" />
+              <span>Mark All Absent</span>
+            </Button>
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleClearAll}
-            disabled={students.length === 0}
-            className="h-8 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
-          >
-            Clear
-          </Button>
-        </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearAll}
+              disabled={attendanceStudents.length === 0}
+              className="h-8 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 3. Summary Statistics Cards */}
@@ -345,9 +390,11 @@ export default function AttendancePage() {
         </div>
       ) : (
         <AttendanceTable
-          students={students}
+          students={attendanceStudents}
           attendanceMap={attendanceMap}
           onStatusChange={handleStatusChange}
+          isReadOnly={isStudent}
+          highlightStudentId={loggedInStudent?.student_id}
         />
       )}
     </div>

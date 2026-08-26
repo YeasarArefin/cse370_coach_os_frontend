@@ -6,12 +6,16 @@ import { NoticeTable } from "@/components/notices/NoticeTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Notice } from "@/types";
+import { Notice, Student } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Globe, Layers, Plus, RefreshCw, Search } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useMemo, useState } from "react";
 
 export default function NoticesPage() {
+  const { data: session } = useSession();
+  const isStudent = (session?.user as { role?: string })?.role === "student";
+
   const [search, setSearch] = useState("");
   const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "batch">("all");
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -21,9 +25,33 @@ export default function NoticesPage() {
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
+  // 1. Fetch Students (to find enrolled batches for student role)
+  const { data: students = [] } = useQuery<Student[]>({
+    queryKey: ["students"],
+    queryFn: async () => {
+      const res = await fetch(`${backendUrl}/api/students`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isStudent,
+  });
+
+  const loggedInStudent = useMemo(() => {
+    if (!isStudent || !session?.user) return null;
+    const userId = (session.user as { id?: string }).id;
+    const email = session.user.email?.toLowerCase();
+    return (
+      students.find(
+        (s) =>
+          (userId && s.user_id === userId) ||
+          (email && s.email.toLowerCase() === email)
+      ) || null
+    );
+  }, [isStudent, session, students]);
+
   // Fetch all notices
   const {
-    data: notices = [],
+    data: allNotices = [],
     isLoading,
     isError,
     refetch,
@@ -37,6 +65,17 @@ export default function NoticesPage() {
       return res.json();
     },
   });
+
+  // Filter notices for student's enrolled cohorts + global notices
+  const notices = useMemo(() => {
+    if (!isStudent || !loggedInStudent) return allNotices;
+    const studentBatchIds = new Set(
+      (loggedInStudent.batches || []).map((b) => b.batch_id).filter(Boolean)
+    );
+    if (loggedInStudent.batch_id) studentBatchIds.add(loggedInStudent.batch_id);
+
+    return allNotices.filter((n) => !n.batch_id || studentBatchIds.has(n.batch_id));
+  }, [allNotices, isStudent, loggedInStudent]);
 
   // Filter notices by search and scope tabs
   const filteredNotices = useMemo(() => {
@@ -77,18 +116,22 @@ export default function NoticesPage() {
             <span>Notice Board</span>
           </h1>
           <p className="text-sm text-muted-foreground">
-            Broadcast announcements globally or publish cohort-specific notices with automated email notifications.
+            {isStudent
+              ? "View global announcements and updates for your enrolled batches."
+              : "Broadcast announcements globally or publish cohort-specific notices with automated email notifications."}
           </p>
         </div>
 
-        {/* 3. Add Button */}
-        <Button
-          onClick={() => setIsAddOpen(true)}
-          className="h-10 rounded-full px-5 text-sm font-medium shadow-none self-start sm:self-auto gap-2"
-        >
-          <Plus className="size-4" data-icon="inline-start" />
-          <span>Publish Notice</span>
-        </Button>
+        {/* 3. Add Button (Teachers only) */}
+        {!isStudent && (
+          <Button
+            onClick={() => setIsAddOpen(true)}
+            className="h-10 rounded-full px-5 text-sm font-medium shadow-none self-start sm:self-auto gap-2"
+          >
+            <Plus className="size-4" data-icon="inline-start" />
+            <span>Publish Notice</span>
+          </Button>
+        )}
       </div>
 
       {/* 2. Controls & Filter Bar */}
@@ -175,18 +218,23 @@ export default function NoticesPage() {
         <NoticeTable
           notices={filteredNotices}
           onDelete={handleDelete}
+          isReadOnly={isStudent}
         />
       )}
 
-      {/* 5. Add Notice Sheet */}
-      <AddNoticeSheet open={isAddOpen} onOpenChange={setIsAddOpen} />
+      {/* 5. Add Notice Sheet (Teachers only) */}
+      {!isStudent && (
+        <AddNoticeSheet open={isAddOpen} onOpenChange={setIsAddOpen} />
+      )}
 
-      {/* 6. Delete Confirmation Dialog */}
-      <DeleteNoticeDialog
-        notice={deletingNotice}
-        open={isDeleteOpen}
-        onOpenChange={setIsDeleteOpen}
-      />
+      {/* 6. Delete Confirmation Dialog (Teachers only) */}
+      {!isStudent && (
+        <DeleteNoticeDialog
+          notice={deletingNotice}
+          open={isDeleteOpen}
+          onOpenChange={setIsDeleteOpen}
+        />
+      )}
     </div>
   );
 }

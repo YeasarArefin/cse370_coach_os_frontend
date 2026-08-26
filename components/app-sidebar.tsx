@@ -2,6 +2,7 @@
 
 import {
   Bell,
+  BellRing,
   BookOpen,
   CalendarCheck,
   CreditCard,
@@ -29,7 +30,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
 const navItems = [
@@ -40,6 +41,7 @@ const navItems = [
   { title: "Assignments", url: "/assignments", icon: FileText },
   { title: "Exams & Results", url: "/exams", icon: GraduationCap },
   { title: "Fee Management", url: "/fees", icon: CreditCard },
+  { title: "Fee Reminders", url: "/reminders", icon: BellRing },
   { title: "Notices", url: "/notices", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
 ];
@@ -47,6 +49,24 @@ const navItems = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const isStudent = (session?.user as { role?: string; })?.role === "student";
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (isStudent) {
+      // Students only see student-relevant features
+      return [
+        "/dashboard",
+        "/attendance",
+        "/assignments",
+        "/exams",
+        "/fees",
+        "/notices",
+        "/leaderboard",
+      ].includes(item.url);
+    }
+    // Teachers see all items
+    return true;
+  });
 
   return (
     <Sidebar {...props}>
@@ -56,18 +76,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <BookOpen className="size-4" />
           </div>
           <div className="flex min-w-0 flex-col gap-0.5 leading-none">
-            <span className="font-heading font-semibold text-sm text-sidebar-foreground truncate">Coaching Center</span>
-            <span className="text-xs text-muted-foreground truncate">Management</span>
+            <span className="font-heading font-semibold text-sm text-sidebar-foreground truncate">CoachOS</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {isStudent ? "Student Portal" : "Management"}
+            </span>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{isStudent ? "Student Menu" : "Menu"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.url;
                 return (

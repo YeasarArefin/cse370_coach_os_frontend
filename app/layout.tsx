@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import { Inter, Nunito, JetBrains_Mono } from "next/font/google";
-import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthSessionProvider } from "@/components/session-provider";
 import { QueryProvider } from "@/components/query-provider";
+import { AuthSessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import type { Metadata } from "next";
+import { Inter, JetBrains_Mono, Nunito } from "next/font/google";
+import "./globals.css";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -27,8 +27,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Coaching Center Management System",
-  description: "University coaching center management system",
+  title: "CoachOS Management System",
+  description: "CoachOS management system",
 };
 
 export default function RootLayout({

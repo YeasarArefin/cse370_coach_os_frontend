@@ -18,101 +18,97 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Batch } from "@/types";
+import { Batch, Exam } from "@/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-interface EditBatchSheetProps {
-  batch: Batch | null;
+interface EditExamSheetProps {
+  exam: Exam | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  batches: Batch[];
 }
 
-export function EditBatchSheet({
-  batch,
+export function EditExamSheet({
+  exam,
   open,
   onOpenChange,
-}: EditBatchSheetProps) {
+  batches,
+}: EditExamSheetProps) {
   const queryClient = useQueryClient();
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [fee, setFee] = useState("1500");
-  const [startDate, setStartDate] = useState("");
-  const [status, setStatus] = useState<"active" | "completed" | "inactive">(
-    "active"
-  );
+  const [batchId, setBatchId] = useState("");
+  const [title, setTitle] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [totalMarks, setTotalMarks] = useState<string>("100");
   const [validationError, setValidationError] = useState("");
 
-  // Sync form state when batch changes
+  // Sync state when exam changes
   useEffect(() => {
-    if (batch) {
-      setName(batch.name || "");
-      setDescription(batch.description || "");
-      setFee(String(batch.fee ?? 1500));
-      setStartDate(
-        batch.start_date
-          ? new Date(batch.start_date).toISOString().split("T")[0]
+    if (exam) {
+      setBatchId(exam.batch_id || "");
+      setTitle(exam.title || "");
+      setExamDate(
+        exam.exam_date
+          ? new Date(exam.exam_date).toISOString().split("T")[0]
           : ""
       );
-      setStatus(batch.status || "active");
+      setTotalMarks(String(exam.total_marks || 100));
       setValidationError("");
     }
-  }, [batch]);
+  }, [exam]);
 
-  // Check whether form values changed from initial batch state
+  // Dirty check: whether any value changed from initial exam
   const isFormDirty = useMemo(() => {
-    if (!batch) return false;
-    const initialStartDate = batch.start_date
-      ? new Date(batch.start_date).toISOString().split("T")[0]
+    if (!exam) return false;
+    const initialDate = exam.exam_date
+      ? new Date(exam.exam_date).toISOString().split("T")[0]
       : "";
     return (
-      name !== (batch.name || "") ||
-      description !== (batch.description || "") ||
-      fee !== String(batch.fee ?? 1500) ||
-      startDate !== initialStartDate ||
-      status !== (batch.status || "active")
+      batchId !== (exam.batch_id || "") ||
+      title !== (exam.title || "") ||
+      examDate !== initialDate ||
+      totalMarks !== String(exam.total_marks || 100)
     );
-  }, [batch, name, description, fee, startDate, status]);
+  }, [exam, batchId, title, examDate, totalMarks]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!batch) return;
+      if (!exam) return;
 
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-      const res = await fetch(`${backendUrl}/api/batches/${batch.batch_id}`, {
+      const res = await fetch(`${backendUrl}/api/exams/${exam.exam_id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          description: description || null,
-          fee: Number(fee) || 0,
-          start_date: startDate || null,
-          status,
+          batch_id: batchId,
+          title,
+          exam_date: examDate || null,
+          total_marks: Number(totalMarks),
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || "Failed to update batch.");
+        throw new Error(data.message || "Failed to update exam.");
       }
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["batches"] });
-      queryClient.invalidateQueries({ queryKey: ["fees"] });
-      toast.success("Batch Updated", {
-        description: `Batch "${data.name}" was updated successfully.`,
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+      queryClient.invalidateQueries({ queryKey: ["results", exam?.exam_id] });
+      toast.success("Exam Updated", {
+        description: `Changes to "${data.title || title}" have been saved.`,
       });
       onOpenChange(false);
     },
     onError: (error: Error) => {
       toast.error("Update Failed", {
-        description: error.message || "Could not update batch.",
+        description: error.message || "Could not update exam.",
       });
     },
   });
@@ -121,15 +117,16 @@ export function EditBatchSheet({
     e.preventDefault();
     setValidationError("");
 
-    if (!name.trim()) {
-      const msg = "Batch name is required.";
+    if (!batchId || !title.trim()) {
+      const msg = "Please provide an assigned batch and exam title.";
       setValidationError(msg);
       toast.error("Validation Error", { description: msg });
       return;
     }
 
-    if (isNaN(Number(fee)) || Number(fee) < 0) {
-      const msg = "Monthly fee must be a valid positive number.";
+    const marks = Number(totalMarks);
+    if (isNaN(marks) || marks <= 0) {
+      const msg = "Total marks must be a valid positive number.";
       setValidationError(msg);
       toast.error("Validation Error", { description: msg });
       return;
@@ -141,7 +138,7 @@ export function EditBatchSheet({
   const errorMessage =
     validationError ||
     (updateMutation.isError
-      ? updateMutation.error?.message || "Failed to update batch."
+      ? updateMutation.error?.message || "Failed to update exam."
       : null);
 
   return (
@@ -149,10 +146,10 @@ export function EditBatchSheet({
       <SheetContent className="flex flex-col gap-0 p-0 w-full sm:max-w-xl md:max-w-2xl overflow-y-auto">
         <SheetHeader className="border-b border-border p-6 text-left">
           <SheetTitle className="font-heading text-lg font-bold">
-            Edit Batch Cohort
+            Edit Examination
           </SheetTitle>
           <SheetDescription className="text-xs text-muted-foreground">
-            Update batch details, curriculum description, and operational status.
+            Update exam schedule details, cohort assignment, or maximum marks.
           </SheetDescription>
         </SheetHeader>
 
@@ -164,101 +161,89 @@ export function EditBatchSheet({
               </Alert>
             )}
 
+            {/* Batch Select */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="edit-batch-name"
+                htmlFor="edit-exam-batch"
                 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
-                Batch Name *
-              </label>
-              <Input
-                id="edit-batch-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-fee"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Monthly Fee (৳) *
-              </label>
-              <Input
-                id="edit-batch-fee"
-                type="number"
-                min="0"
-                step="50"
-                value={fee}
-                onChange={(e) => setFee(e.target.value)}
-                required
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-description"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Description / Syllabus
-              </label>
-              <Input
-                id="edit-batch-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-start-date"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Start Date
-              </label>
-              <Input
-                id="edit-batch-start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                disabled={updateMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="edit-batch-status"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Batch Status
+                Assigned Batch *
               </label>
               <Select
-                value={status}
-                onValueChange={(val) =>
-                  setStatus(val as "active" | "completed" | "inactive")
-                }
+                value={batchId}
+                onValueChange={(val) => val && setBatchId(val)}
                 disabled={updateMutation.isPending}
               >
                 <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
-                  <SelectValue placeholder="Select status">
-                    {status === "active" ? "Active" : status === "completed" ? "Completed" : "Inactive"}
+                  <SelectValue placeholder="Select batch cohort">
+                    {batches.find((b) => b.batch_id === batchId)?.name}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  {batches.map((b) => (
+                    <SelectItem key={b.batch_id} value={b.batch_id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Title */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-exam-title"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Exam Title *
+              </label>
+              <Input
+                id="edit-exam-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                disabled={updateMutation.isPending}
+                className="h-10 rounded-full px-4 text-sm"
+              />
+            </div>
+
+            {/* Exam Date */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-exam-date"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Exam Date
+              </label>
+              <Input
+                id="edit-exam-date"
+                type="date"
+                value={examDate}
+                onChange={(e) => setExamDate(e.target.value)}
+                disabled={updateMutation.isPending}
+                className="h-10 rounded-full px-4 text-sm"
+              />
+            </div>
+
+            {/* Total Marks */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="edit-exam-total-marks"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Total Maximum Marks *
+              </label>
+              <Input
+                id="edit-exam-total-marks"
+                type="number"
+                min="1"
+                step="1"
+                value={totalMarks}
+                onChange={(e) => setTotalMarks(e.target.value)}
+                required
+                disabled={updateMutation.isPending}
+                className="h-10 rounded-full px-4 text-sm"
+              />
             </div>
           </div>
 
@@ -282,7 +267,7 @@ export function EditBatchSheet({
                 {updateMutation.isPending ? (
                   <>
                     <Loader2 className="animate-spin" data-icon="inline-start" />
-                    Saving...
+                    Saving Changes...
                   </>
                 ) : (
                   "Save Changes"

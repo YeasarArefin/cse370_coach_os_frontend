@@ -16,12 +16,14 @@ import { Trash2, Bell, Globe, Layers, Calendar } from "lucide-react";
 
 interface NoticeTableProps {
   notices: Notice[];
-  onDelete: (notice: Notice) => void;
+  onDelete?: (notice: Notice) => void;
+  isReadOnly?: boolean;
 }
 
 export function NoticeTable({
   notices,
   onDelete,
+  isReadOnly = false,
 }: NoticeTableProps) {
   if (notices.length === 0) {
     return (
@@ -53,9 +55,11 @@ export function NoticeTable({
             <TableHead>
               Published Date
             </TableHead>
-            <TableHead className="text-right pr-4">
-              Action
-            </TableHead>
+            {!isReadOnly && (
+              <TableHead className="text-right pr-4">
+                Action
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
 
@@ -123,20 +127,24 @@ export function NoticeTable({
                 </TableCell>
 
                 {/* Action */}
-                <TableCell className="text-right pr-4">
-                  <div className="flex items-center justify-end">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => onDelete(notice)}
-                      title="Delete notice"
-                    >
-                      <Trash2 className="size-3.5" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </div>
-                </TableCell>
+                {!isReadOnly && (
+                  <TableCell className="text-right pr-4">
+                    <div className="flex items-center justify-end">
+                      {onDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => onDelete(notice)}
+                          title="Delete notice"
+                        >
+                          <Trash2 className="size-3.5" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             );
           })}

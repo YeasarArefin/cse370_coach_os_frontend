@@ -1,15 +1,15 @@
-import Link from "next/link";
-import {
-  BookOpen,
-  LayoutDashboard,
-  Layers,
-  Users,
-  CalendarCheck,
-  Bell,
-  Home,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import {
+  Bell,
+  BookOpen,
+  CalendarCheck,
+  Home,
+  Layers,
+  LayoutDashboard,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function NotFound() {
   return (
@@ -22,7 +22,7 @@ export default function NotFound() {
           </div>
           <div className="flex flex-col leading-none">
             <span className="font-heading font-semibold text-sm text-foreground group-hover:underline">
-              Coaching Center
+              CoachOS
             </span>
             <span className="text-[11px] text-muted-foreground">Management</span>
           </div>
@@ -138,7 +138,7 @@ export default function NotFound() {
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        <p>© 2026 Coaching Center Management System. All rights reserved.</p>
+        <p>© 2026 CoachOS Management System. All rights reserved.</p>
       </footer>
     </div>
   );

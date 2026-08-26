@@ -18,36 +18,53 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Batch } from "@/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-interface AddBatchSheetProps {
+interface AddExamSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  batches: Batch[];
+  defaultBatchId?: string;
 }
 
-export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
+export function AddExamSheet({
+  open,
+  onOpenChange,
+  batches,
+  defaultBatchId,
+}: AddExamSheetProps) {
   const queryClient = useQueryClient();
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [fee, setFee] = useState("1500");
-  const [startDate, setStartDate] = useState(
+  const [batchId, setBatchId] = useState("");
+  const [title, setTitle] = useState("");
+  const [examDate, setExamDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [status, setStatus] = useState<"active" | "completed" | "inactive">(
-    "active"
-  );
+  const [totalMarks, setTotalMarks] = useState<string>("100");
   const [validationError, setValidationError] = useState("");
 
+  // Sync default batch
+  useEffect(() => {
+    if (defaultBatchId) {
+      setBatchId(defaultBatchId);
+    } else if (batches.length > 0 && !batchId) {
+      setBatchId(batches[0].batch_id);
+    }
+  }, [defaultBatchId, batches, batchId]);
+
   const resetForm = () => {
-    setName("");
-    setDescription("");
-    setFee("1500");
-    setStartDate(new Date().toISOString().split("T")[0]);
-    setStatus("active");
+    setTitle("");
+    setExamDate(new Date().toISOString().split("T")[0]);
+    setTotalMarks("100");
+    if (defaultBatchId) {
+      setBatchId(defaultBatchId);
+    } else if (batches.length > 0) {
+      setBatchId(batches[0].batch_id);
+    }
     setValidationError("");
   };
 
@@ -56,35 +73,34 @@ export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-      const res = await fetch(`${backendUrl}/api/batches`, {
+      const res = await fetch(`${backendUrl}/api/exams`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          description: description || null,
-          fee: Number(fee) || 0,
-          start_date: startDate || null,
-          status,
+          batch_id: batchId,
+          title,
+          exam_date: examDate || null,
+          total_marks: Number(totalMarks),
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || "Failed to create batch.");
+        throw new Error(data.message || "Failed to create exam.");
       }
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["batches"] });
-      toast.success("Batch Created", {
-        description: `Batch "${data.name}" was created successfully.`,
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+      toast.success("Exam Created", {
+        description: `"${data.title}" was scheduled for ${data.batch_name || "the batch"}.`,
       });
       resetForm();
       onOpenChange(false);
     },
     onError: (error: Error) => {
       toast.error("Creation Failed", {
-        description: error.message || "Could not create batch.",
+        description: error.message || "Could not create exam.",
       });
     },
   });
@@ -93,15 +109,16 @@ export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
     e.preventDefault();
     setValidationError("");
 
-    if (!name.trim()) {
-      const msg = "Batch name is required.";
+    if (!batchId || !title.trim()) {
+      const msg = "Please provide an assigned batch cohort and exam title.";
       setValidationError(msg);
       toast.error("Validation Error", { description: msg });
       return;
     }
 
-    if (isNaN(Number(fee)) || Number(fee) < 0) {
-      const msg = "Monthly fee must be a valid positive number.";
+    const marks = Number(totalMarks);
+    if (isNaN(marks) || marks <= 0) {
+      const msg = "Total marks must be a valid positive number.";
       setValidationError(msg);
       toast.error("Validation Error", { description: msg });
       return;
@@ -113,7 +130,7 @@ export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
   const errorMessage =
     validationError ||
     (createMutation.isError
-      ? createMutation.error?.message || "Failed to create batch."
+      ? createMutation.error?.message || "Failed to create exam."
       : null);
 
   return (
@@ -121,10 +138,10 @@ export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
       <SheetContent className="flex flex-col gap-0 p-0 w-full sm:max-w-xl md:max-w-2xl overflow-y-auto">
         <SheetHeader className="border-b border-border p-6 text-left">
           <SheetTitle className="font-heading text-lg font-bold">
-            Create Batch Cohort
+            Create Examination
           </SheetTitle>
           <SheetDescription className="text-xs text-muted-foreground">
-            Add a new academic batch, set schedule, and assign fee.
+            Schedule a test, quiz, or midterm for a batch cohort.
           </SheetDescription>
         </SheetHeader>
 
@@ -136,104 +153,97 @@ export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
               </Alert>
             )}
 
+            {/* Batch Select */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="name"
+                htmlFor="exam-batch"
                 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
-                Batch Name *
+                Assigned Batch *
+              </label>
+              {batches.length > 0 ? (
+                <Select
+                  value={batchId}
+                  onValueChange={(val) => val && setBatchId(val)}
+                  disabled={createMutation.isPending}
+                >
+                  <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
+                    <SelectValue placeholder="Select batch cohort">
+                      {batches.find((b) => b.batch_id === batchId)?.name}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {batches.map((b) => (
+                      <SelectItem key={b.batch_id} value={b.batch_id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground text-center">
+                  No batches available. Please create a batch first.
+                </div>
+              )}
+            </div>
+
+            {/* Title */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="exam-title"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Exam Title *
               </label>
               <Input
-                id="name"
-                placeholder="e.g. Physics 2026 - Morning"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                id="exam-title"
+                placeholder="e.g. Physics Midterm Examination 2026"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 required
                 disabled={createMutation.isPending}
                 className="h-10 rounded-full px-4 text-sm"
               />
             </div>
 
+            {/* Exam Date */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="fee"
+                htmlFor="exam-date"
                 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
-                Monthly Fee (৳) *
+                Exam Date
               </label>
               <Input
-                id="fee"
-                type="number"
-                min="0"
-                step="50"
-                placeholder="1500"
-                value={fee}
-                onChange={(e) => setFee(e.target.value)}
-                required
-                disabled={createMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="description"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Description / Syllabus
-              </label>
-              <Input
-                id="description"
-                placeholder="e.g. Advanced calculus, kinematics, and mechanics"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={createMutation.isPending}
-                className="h-10 rounded-full px-4 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="start_date"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Start Date
-              </label>
-              <Input
-                id="start_date"
+                id="exam-date"
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                value={examDate}
+                onChange={(e) => setExamDate(e.target.value)}
                 disabled={createMutation.isPending}
                 className="h-10 rounded-full px-4 text-sm"
               />
             </div>
 
+            {/* Total Marks */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="status"
+                htmlFor="exam-total-marks"
                 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
-                Batch Status
+                Total Maximum Marks *
               </label>
-              <Select
-                value={status}
-                onValueChange={(val) =>
-                  setStatus(val as "active" | "completed" | "inactive")
-                }
+              <Input
+                id="exam-total-marks"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="100"
+                value={totalMarks}
+                onChange={(e) => setTotalMarks(e.target.value)}
+                required
                 disabled={createMutation.isPending}
-              >
-                <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
-                  <SelectValue placeholder="Select status">
-                    {status === "active" ? "Active" : status === "completed" ? "Completed" : "Inactive"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+                className="h-10 rounded-full px-4 text-sm"
+              />
             </div>
           </div>
 
@@ -251,15 +261,15 @@ export function AddBatchSheet({ open, onOpenChange }: AddBatchSheetProps) {
               <Button
                 type="submit"
                 className="rounded-full px-6 text-sm font-medium"
-                disabled={createMutation.isPending}
+                disabled={createMutation.isPending || batches.length === 0}
               >
                 {createMutation.isPending ? (
                   <>
                     <Loader2 className="animate-spin" data-icon="inline-start" />
-                    Creating...
+                    Creating Exam...
                   </>
                 ) : (
-                  "Create Batch"
+                  "Create Examination"
                 )}
               </Button>
             </div>

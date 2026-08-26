@@ -79,7 +79,7 @@ export default function SignupPage() {
     },
     onSuccess: () => {
       toast.success("Account Created!", {
-        description: "Welcome to Coaching Center Portal.",
+        description: "Welcome to CoachOS Portal.",
       });
       router.push("/dashboard");
       router.refresh();

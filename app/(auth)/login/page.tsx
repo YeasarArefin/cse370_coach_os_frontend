@@ -91,7 +91,7 @@ export default function LoginPage() {
             Teacher Sign In
           </CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
-            Access your batches and coaching center dashboard
+            Access your batches and CoachOS dashboard
           </CardDescription>
         </div>
       </CardHeader>

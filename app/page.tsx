@@ -1,15 +1,15 @@
-import Link from "next/link";
-import {
-  BookOpen,
-  ArrowRight,
-  Layers,
-  CalendarCheck,
-  GraduationCap,
-  CreditCard,
-  CheckCircle2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarCheck,
+  CheckCircle2,
+  CreditCard,
+  GraduationCap,
+  Layers,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -21,7 +21,7 @@ export default function HomePage() {
             <BookOpen className="size-4" />
           </div>
           <span className="font-heading text-lg font-bold tracking-tight">
-            Coaching Center
+            CoachOS
           </span>
         </div>
 
@@ -49,12 +49,12 @@ export default function HomePage() {
           {/* Eyebrow badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/80 px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
             <span className="flex size-2 rounded-full bg-emerald-500" />
-            University Coaching Center System
+            CoachOS System
           </div>
 
           {/* Main Headline */}
           <h1 className="font-heading text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            The simplest way to run your coaching center.
+            The simplest way to run your CoachOS.
           </h1>
 
           {/* Subtitle */}
@@ -155,7 +155,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-border bg-background py-8 text-center text-xs text-muted-foreground">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
-          <p>© 2026 Coaching Center Management System. All rights reserved.</p>
+          <p>© 2026 CoachOS Management System. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="/login" className="hover:text-foreground underline-offset-4 hover:underline">
               Sign In

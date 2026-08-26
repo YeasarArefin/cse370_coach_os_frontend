@@ -157,7 +157,7 @@ cd <repository-folder>
    SMTP_PORT=587
    SMTP_USER=your-email@gmail.com
    SMTP_PASS=your-gmail-app-password
-   SMTP_FROM="Coaching Center" <your-email@gmail.com>
+   SMTP_FROM="CoachOS" <your-email@gmail.com>
    ```
 
 4. Start the backend development server:

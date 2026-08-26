@@ -28,7 +28,7 @@ export default function AuthLayout({
               <BookOpen className="size-4" />
             </div>
             <span className="font-heading text-lg font-bold tracking-tight">
-              Coaching Center
+              CoachOS
             </span>
           </Link>
         </div>
@@ -74,7 +74,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        © 2026 Coaching Center Management System
+        © 2026 CoachOS Management System
       </footer>
     </div>
   );

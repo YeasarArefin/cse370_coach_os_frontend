@@ -241,7 +241,9 @@ export function AddStudentSheet({
                   disabled={createMutation.isPending}
                 >
                   <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
-                    <SelectValue placeholder="Select a batch" />
+                    <SelectValue placeholder="Select a batch">
+                      {batches.find((b) => b.batch_id === batchId)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {batches.map((batch) => (
@@ -324,7 +326,9 @@ export function AddStudentSheet({
                 disabled={createMutation.isPending}
               >
                 <SelectTrigger className="h-10 w-full rounded-full px-4 text-sm">
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder="Select status">
+                    {status === "active" ? "Active" : "Inactive"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
